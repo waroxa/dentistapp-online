@@ -505,8 +505,24 @@ export function SmileTransformationSection({ clinicBranding }: SmileTransformati
   }
 
   return (
-    <section id="smile-transform" className="relative bg-slate-50 px-4 py-8 sm:py-12 lg:py-16">
+    <section id="smile-transform" className="relative bg-slate-50 px-4 py-12 sm:py-16 lg:py-20">
       <div className="mx-auto max-w-6xl space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mx-auto mb-8 max-w-2xl text-center"
+        >
+          <p className="mb-3 text-sm font-bold tracking-widest uppercase" style={{ color: primaryColor }}>
+            Free AI Smile Preview
+          </p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            Try it now — see your new smile today
+          </h2>
+          <p className="mt-3 text-base text-slate-500">
+            Three quick steps: tell us who you are, upload a photo, and let the AI design your transformation.
+          </p>
+        </motion.div>
         <div className="grid gap-4 lg:gap-6 lg:grid-cols-2 lg:items-stretch">
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
             <div className="mb-5">

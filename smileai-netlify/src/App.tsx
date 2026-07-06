@@ -6,6 +6,8 @@ import { PremiumExamples } from './components/PremiumExamples';
 import { VideoExamples } from './components/VideoExamples';
 import { HowItWorks } from './components/HowItWorks';
 import { Testimonials } from './components/Testimonials';
+import { FAQ } from './components/FAQ';
+import { FinalCTA } from './components/FinalCTA';
 import { Footer } from './components/Footer';
 import { SocialProofNotifications } from './components/SocialProofNotifications';
 import { GettingStarted } from './components/docs/GettingStarted';
@@ -106,8 +108,12 @@ function App() {
       </div>
       <VideoExamples clinicBranding={clinicBranding} />
       <SmileTransformationSection clinicBranding={clinicBranding} />
-      <HowItWorks clinicBranding={clinicBranding} />
+      <div id="how-it-works">
+        <HowItWorks clinicBranding={clinicBranding} />
+      </div>
       <Testimonials clinicBranding={clinicBranding} />
+      <FAQ clinicBranding={clinicBranding} />
+      <FinalCTA clinicBranding={clinicBranding} />
       <Footer clinicBranding={clinicBranding} />
       <SocialProofNotifications enabled={!showLogin} />
       <StaffLoginModal
