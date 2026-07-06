@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Palette, Bell, CreditCard, Shield, MapPin, MessageSquare, RotateCcw } from 'lucide-react';
+import { Save, Palette, Bell, CreditCard, Shield, MapPin, MessageSquare, RotateCcw, Users } from 'lucide-react';
 import { ClinicBranding } from '../../App';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 import { BrandCustomizationPanel } from './BrandCustomizationPanel';
 import { SecuritySettingsPanel } from './SecuritySettingsPanel';
+import { TeamSettingsPanel } from './TeamSettingsPanel';
 import { ContactSettingsPanel } from './ContactSettingsPanel';
 import { TestimonialsSettingsPanel } from './TestimonialsSettingsPanel';
 import { setClinicBranding } from '../../utils/ghl-storage';
@@ -17,13 +18,14 @@ interface SettingsViewProps {
 
 export function SettingsView({ clinicBranding, onBrandingChange }: SettingsViewProps) {
   const [localBranding, setLocalBranding] = useState(clinicBranding);
-  const [activeTab, setActiveTab] = useState<'branding' | 'contact' | 'testimonials' | 'notifications' | 'integration' | 'security' | 'billing'>('branding');
+  const [activeTab, setActiveTab] = useState<'branding' | 'contact' | 'testimonials' | 'notifications' | 'integration' | 'team' | 'security' | 'billing'>('branding');
   const [isSaving, setIsSaving] = useState(false);
   const visibleTabs = [
     { id: 'branding', label: 'Branding', icon: Palette },
     { id: 'contact', label: 'Contact', icon: MapPin },
     { id: 'testimonials', label: 'Reviews', icon: MessageSquare },
     { id: 'notifications', label: 'Alerts', icon: Bell },
+    { id: 'team', label: 'Team', icon: Users },
     { id: 'security', label: 'Security', icon: Shield },
   ] as const;
 
@@ -223,6 +225,13 @@ export function SettingsView({ clinicBranding, onBrandingChange }: SettingsViewP
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
                 This section is hidden for now.
               </div>
+            </div>
+          )}
+
+          {/* Team Tab */}
+          {activeTab === 'team' && (
+            <div className="space-y-6">
+              <TeamSettingsPanel />
             </div>
           )}
 

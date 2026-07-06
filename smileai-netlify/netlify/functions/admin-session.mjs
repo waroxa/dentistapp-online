@@ -6,5 +6,5 @@ export async function handler(event) {
   if (session.workspaceKey && session.workspaceKey !== workspaceKey) {
     return json(401, { authenticated: false });
   }
-  return json(200, { authenticated: true, role: session.role, exp: session.exp });
+  return json(200, { authenticated: true, role: session.role, email: session.email || null, name: session.name || null, staffId: session.staffId || null, exp: session.exp });
 }

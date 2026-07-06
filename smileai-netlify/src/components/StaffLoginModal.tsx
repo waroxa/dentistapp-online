@@ -10,7 +10,7 @@ interface StaffLoginModalProps {
   onSuccess: () => void;
 }
 
-type AccessMode = 'loading' | 'login' | 'setup' | 'unavailable';
+type AccessMode = 'loading' | 'login' | 'setup' | 'reset' | 'unavailable';
 
 interface AdminStatusResponse {
   mode?: 'login' | 'setup' | 'unavailable';
@@ -38,6 +38,7 @@ function getWorkspaceKey() {
 export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalProps) {
   const [accessMode, setAccessMode] = useState<AccessMode>('loading');
   const [statusMessage, setStatusMessage] = useState(initialMessage);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [activationSecret, setActivationSecret] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -52,6 +53,7 @@ export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalP
   const [error, setError] = useState('');
 
   const clearForm = () => {
+    setEmail('');
     setPassword('');
     setActivationSecret('');
     setNewPassword('');
@@ -71,6 +73,9 @@ export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalP
       const currentWorkspaceKey = getWorkspaceKey();
       setWorkspaceKey(currentWorkspaceKey);
       const res = await fetch(`/api/admin/status?workspaceKey=${encodeURIComponent(currentWorkspaceKey)}`, { credentials: 'include' });
+      if (!(res.headers.get('content-type') || '').includes('application/json')) {
+        throw new Error('The staff access API is not reachable right now. Please try again in a moment.');
+      }
       const data: AdminStatusResponse = await res.json();
       if (data.workspaceKey) setWorkspaceKey(data.workspaceKey);
       setSetupMethod(data.setupMethod === 'install' ? 'install' : 'secret');
@@ -128,7 +133,7 @@ export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalP
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, workspaceKey }),
+        body: JSON.stringify({ email: email.trim() || undefined, password, workspaceKey }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -138,6 +143,7 @@ export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalP
         }
         throw new Error(data.error || 'Login failed.');
       }
+      setEmail('');
       setPassword('');
       onSuccess();
     } catch (err: any) {
@@ -170,6 +176,31 @@ export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalP
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/password-reset', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activationSecret, newPassword, confirmPassword, workspaceKey }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Password reset failed.');
+      setActivationSecret('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setAccessMode('login');
+      setStatusMessage('Password updated. Sign in with your new password.');
+    } catch (err: any) {
+      setError(err.message || 'Password reset failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCompleteSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -195,6 +226,7 @@ export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalP
 
   const title = useMemo(() => {
     if (accessMode === 'setup') return activationAuthorized ? 'Create staff password' : 'Activate staff access';
+    if (accessMode === 'reset') return 'Reset owner password';
     if (accessMode === 'unavailable') return 'Staff access unavailable';
     return 'Private staff access';
   }, [accessMode, activationAuthorized]);
@@ -257,6 +289,27 @@ export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalP
             {accessMode === 'login' && (
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
+                  <label htmlFor="staff-email" className="mb-2 block text-sm font-medium text-gray-900">
+                    Staff email
+                  </label>
+                  <Input
+                    id="staff-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError('');
+                    }}
+                    placeholder="you@practice.com"
+                    className="h-12 text-slate-900 placeholder:text-slate-400"
+                    style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a' }}
+                    autoFocus
+                  />
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    Leave empty to sign in with the practice owner password.
+                  </p>
+                </div>
+                <div>
                   <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-900">
                     Password
                   </label>
@@ -272,7 +325,6 @@ export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalP
                       placeholder="Enter your password"
                       className="h-12 pr-12 text-slate-900 placeholder:text-slate-400"
                       style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a' }}
-                      autoFocus
                     />
                     <button
                       type="button"
@@ -290,6 +342,115 @@ export function StaffLoginModal({ isOpen, onClose, onSuccess }: StaffLoginModalP
                 >
                   {isLoading ? 'Authenticating...' : 'Open admin'}
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError('');
+                    setAccessMode('reset');
+                    setStatusMessage('Reset the practice owner password using your private activation code.');
+                  }}
+                  className="block w-full text-center text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  Forgot password?
+                </button>
+              </form>
+            )}
+
+            {accessMode === 'reset' && (
+              <form onSubmit={handlePasswordReset} className="space-y-4">
+                <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+                  <p className="mb-2 font-medium">Staff member?</p>
+                  <p className="mb-3">Ask your practice administrator to reset your password from Settings → Team. They will give you a new temporary password.</p>
+                  <p className="font-medium">Practice owner?</p>
+                  <p>Enter your private activation code below to set a new owner password.</p>
+                </div>
+                {workspaceKey !== 'default' && (
+                  <p className="text-xs text-gray-500">
+                    Workspace ID: {workspaceKey} — use this format: <span className="font-mono">{workspaceKey}:your-setup-secret</span>
+                  </p>
+                )}
+                <div>
+                  <label htmlFor="resetSecret" className="mb-2 block text-sm font-medium text-gray-900">
+                    Activation code
+                  </label>
+                  <Input
+                    id="resetSecret"
+                    type="password"
+                    value={activationSecret}
+                    onChange={(e) => {
+                      setActivationSecret(e.target.value);
+                      setError('');
+                    }}
+                    placeholder="Enter activation code"
+                    className="h-12 text-slate-900 placeholder:text-slate-400"
+                    style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a' }}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label htmlFor="resetNewPassword" className="mb-2 block text-sm font-medium text-gray-900">
+                    New password
+                  </label>
+                  <div className="relative">
+                    <Input
+                      id="resetNewPassword"
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        setError('');
+                      }}
+                      placeholder="Create a strong password"
+                      className="h-12 pr-12 text-slate-900 placeholder:text-slate-400"
+                      style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((value) => !value)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Use at least 12 characters with uppercase, lowercase, and a number.
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="resetConfirmPassword" className="mb-2 block text-sm font-medium text-gray-900">
+                    Confirm password
+                  </label>
+                  <Input
+                    id="resetConfirmPassword"
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setError('');
+                    }}
+                    placeholder="Re-enter the password"
+                    className="h-12 text-slate-900 placeholder:text-slate-400"
+                    style={{ color: '#0f172a', WebkitTextFillColor: '#0f172a' }}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isLoading || !activationSecret || !newPassword || !confirmPassword}
+                  className="h-12 w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                >
+                  {isLoading ? 'Resetting...' : 'Reset password'}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError('');
+                    setAccessMode('login');
+                    setStatusMessage(initialMessage);
+                  }}
+                  className="block w-full text-center text-sm font-medium text-gray-500 hover:text-gray-700"
+                >
+                  Back to sign in
+                </button>
               </form>
             )}
 

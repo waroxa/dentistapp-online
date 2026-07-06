@@ -68,6 +68,18 @@
   force = true
 
 [[redirects]]
+  from = "/api/admin/staff"
+  to = "/.netlify/functions/admin-staff"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/admin/password-reset"
+  to = "/.netlify/functions/admin-password-reset"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/lead-submit"
   to = "/.netlify/functions/lead-submit"
   status = 200
